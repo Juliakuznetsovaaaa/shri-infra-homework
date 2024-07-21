@@ -83,7 +83,7 @@ jobs:
           echo "- Version: ${{ github.run_number }}" >> $ISSUE
           echo "- Commits: ${{ github.event.head_commit.message }}" >> $ISSUE
           git log --pretty=oneline >> $ISSUE
-          echo "- YC Docker: cr.yandex/${{ssecrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_fix${{ github.run_number }}" >> $ISSUE
+          echo "- YC Docker: cr.yandex/${{secrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_fix${{ github.run_number }}" >> $ISSUE
           number=$(gh issue list --label "release ${{ github.event.inputs.version }}" --json number --jq '.[0].number')
           gh issue comment "$number" --body-file "$ISSUE"
           rm $ISSUE

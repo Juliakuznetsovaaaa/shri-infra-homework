@@ -21,7 +21,8 @@ jobs:
     - run: npm run lint
     - run: npm test
     - name: Build Docker image
-      run: docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest .
+      run: docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+           docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest .
     - name: Push Docker image
       run: |
         echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login cr.yandex -u oauth --password-stdin

@@ -3,66 +3,67 @@ name: Fix Release
 on:
   workflow_dispatch:
     inputs:
-      release-version:
-        description: Версия релиза, к которому необходимо добавить фикс
+      release_version:
+        description: 'Release version'
         required: true
 
 jobs:
   fix:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run linter
-        run: npm run lint
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Build Docker image
-        run: |
-          docker build -t cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_fix${{ github.run_number }} .
-          docker tag cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_fix${{ github.run_number }} cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_latest
-
-      - name: Push Docker image to registry
-        run: |
-          docker push cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_fix${{ github.run_number }}
-          docker push cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_latest
-
-      - name: Create fix tag
-        run: |
-          git tag -a ${{ inputs.release-version }}_fix${{ github.run_number }} -m "Fix release ${{ inputs.release-version }}_fix${{ github.run_number }}"
-          git push origin ${{ inputs.release-version }}_fix${{ github.run_number }}
-
-      - name: Add comment to Release Issue
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const { context, github } = github;
-            const fixNumber = context.runNumber;
-            const fixDate = new Date().toLocaleDateString();
-            const fixAuthor = context.actor;
-            const releaseVersion = context.inputs['release-version'];
-            const previousFix = context.sha ? previous fix : first fix;
-            const commitList = context.sha ? nn**Список коммитов от ${previousFix}:**n${context.sha} : "";
-            const dockerImageLink = cr.yandex/<идентификатор_реестра>/app:${releaseVersion}_fix${fixNumber};
-            const releaseIssue = context.issues.getIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: releaseVersion,
-            });
-            github.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: releaseVersion,
-              body: **Дата фикса:** ${fixDate}n**Автор фикса:** ${fixAuthor}n**Список коммитов от ${previousFix}:**n${commitList}n**Docker образ:** ${dockerImageLink},
-            });
+    - uses: actions/checkout@v2
+    - name: Set up Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '20'
+    - run: npm install
+    - run: npm run lint
+    - run: npm test
+    - name: Build Docker image
+      run: docker build -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }} -t cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest .
+    - name: Push Docker image
+      run: |
+        echo ${{ secrets.YANDEX_OAUTH_TOKEN }} | docker login cr.yandex -u oauth --password-stdin
+        docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+        docker push cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_latest
+    - name: Create fix tag
+      run: |
+        git tag -a v${{ github.event.inputs.release_version }}_fix${{ github.run_number }} -m "Fix release ${{ github.event.inputs.release_version }}"
+        git push origin v${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+    - name: Find release issue
+      id: find_issue
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const { github, context } = require('@actions/github');
+          const issues = await github.issues.listForRepo({
+            ...context.repo,
+            state: 'open',
+            labels: ['release'],
+          });
+          const issue = issues.data.find(issue => issue.title.includes(`Release ${{ github.event.inputs.release_version }}`));
+          if (!issue) throw new Error('Release issue not found');
+          return issue.number;
+    - name: Get commit history
+      id: commit_history
+      run: |
+        git fetch --tags
+        git log $(git describe --tags --abbrev=0 @^)..@ --pretty=format:"%h - %s (%an)"
+    - name: Add comment to GitHub issue
+      uses: actions/github-script@v3
+      with:
+        script: |
+          const { github, context } = require('@actions/github');
+          const commitHistory = `{{ steps.commit_history.outputs }}`;
+          github.issues.createComment({
+            ...context.repo,
+            issue_number: ${{ steps.find_issue.outputs.issue_number }},
+            body: `
+              Author: ${{ github.actor }}
+              Date: ${new Date().toISOString()}
+              Commits:
+              ${commitHistory}
+              Docker image: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
+            `
+          });

@@ -13,9 +13,9 @@ jobs:
     steps:
       - name: Check for image in registry
         run: |
-          docker pull cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_latest
+          docker pull cr.yandex/${{I/app:${{ inputs.release-version }}_latest
           if [ $? -ne 0 ]; then
-            echo "Образ с тегом ${{ inputs.release-version }}_latest не найден в реджистри."
+            echo "Образ с тегом ${{REGISTRY_ID}} inputs.release-version }}_latest не найден в реджистри."
             exit 1
           fi
 
@@ -26,8 +26,8 @@ jobs:
           username: <имя_пользователя>
           password: <пароль>
           script: |
-            docker pull cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_latest
-            docker run -d -p <порт>:8080 cr.yandex/<идентификатор_реестра>/app:${{ inputs.release-version }}_latest
+            docker pull cr.yandex/${{REGISTRY_ID}}/app:${{ inputs.release-version }}_latest
+            docker run -d -p 3000:8080 cr.yandex/${{REGISTRY_ID}}/app:${{ inputs.release-version }}_latest
 
       - name: Add comment to Release Issue
         uses: actions/github-script@v6

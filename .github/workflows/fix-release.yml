@@ -42,7 +42,7 @@ jobs:
             state: 'open',
             labels: ['release'],
           });
-          const issue = issues.data.find(issue => issue.title.includes(`Release ${{ github.event.inputs.release_version }}`));
+          const issue = issues.data.find(issue => issue.title.includes(Release ${{ github.event.inputs.release_version }}));
           if (!issue) throw new Error('Release issue not found');
           return issue.number;
     - name: Get commit history
@@ -55,15 +55,15 @@ jobs:
       with:
         script: |
           const { github, context } = require('@actions/github');
-          const commitHistory = `{{ steps.commit_history.outputs }}`;
+          const commitHistory = {{ steps.commit_history.outputs }};
           github.issues.createComment({
             ...context.repo,
             issue_number: ${{ steps.find_issue.outputs.issue_number }},
-            body: `
+            body: 
               Author: ${{ github.actor }}
               Date: ${new Date().toISOString()}
               Commits:
               ${commitHistory}
               Docker image: cr.yandex/${{ secrets.YANDEX_CONTAINER_REGISTRY_ID }}/app:${{ github.event.inputs.release_version }}_fix${{ github.run_number }}
-            `
+            
           });

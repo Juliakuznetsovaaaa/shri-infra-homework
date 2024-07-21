@@ -39,17 +39,17 @@ jobs:
         run: |
             docker login \
               --username oauth \
-              --password y0_AgAAAAARGgvaAATuwQAAAAEK4sLZAACOT0atadBCaYV6AMsFzcLzobrtEQ \
+              --password ${{secrets.YANDEX_OAUTH_TOKEN }} \
               cr.yandex
       - name: Build and Push Docker image fix
         run: |
-          docker build -t cr.yandex/crpq0smlqdgdjc30m4j1/app:${{ inputs.version }}_fix${{ github.run_number }} .
-          docker push cr.yandex/crpq0smlqdgdjc30m4j1/app:${{ inputs.version }}_fix${{ github.run_number }}
+          docker build -t cr.yandex/${{secrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_fix${{ github.run_number }} .
+          docker push cr.yandex/${{secrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_fix${{ github.run_number }}
 
       - name: Build and Push Docker image Latest
         run: |
-          docker build -t cr.yandex/crpq0smlqdgdjc30m4j1/app:${{ inputs.version }}_latest .
-          docker push cr.yandex/crpq0smlqdgdjc30m4j1/app:${{ inputs.version }}_latest
+          docker build -t cr.yandex/${{secrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_latest .
+          docker push cr.yandex/${{secrets.YANDEX_CONTAINER_REGISTRY_ID}}/app:${{ inputs.version }}_latest
   tagging_release_fix:
     needs: [run_checks]
     runs-on: ubuntu-latest
